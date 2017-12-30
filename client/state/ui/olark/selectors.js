@@ -51,3 +51,21 @@ export function isChatAvailable( state, context ) {
 export function isOperatorsAvailable( state ) {
 	return state.ui.olark.operatorStatus === OPERATOR_STATUS_AVAILABLE;
 }
+
+/**
+ * Returns if precancellation chat is available.
+ * @param   {Object}  state  Global state tree
+ * @returns {Boolean}        true, when precancellation is available
+ */
+export function isCancellationChatAvailable( state ) {
+	return state.ui.olark.availability.precancellation;
+}
+
+/**
+ * Returns if presales chat is available.
+ * @param   {Object}  state  Global state tree
+ * @returns {Boolean}        true, when presales is available
+ */
+export function isPresalesChatAvailable( state ) {
+	return state.ui.olark.availability.presales;
+}
