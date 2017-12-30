@@ -67,5 +67,5 @@ export function isCancellationChatAvailable( state ) {
  * @returns {Boolean}        true, when presales is available
  */
 export function isPresalesChatAvailable( state ) {
-	return state.ui.olark.availability.presales;
+	return state.ui.olark.availability.presale;
 }
