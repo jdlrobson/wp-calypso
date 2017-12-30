@@ -43,6 +43,7 @@ import paths from 'me/purchases/paths';
 import { refreshSitePlans } from 'state/sites/plans/actions';
 import { recordTracksEvent } from 'state/analytics/actions';
 import { cancellationEffectDetail, cancellationEffectHeadline } from './cancellation-effect';
+import { isCancellationChatAvailable } from 'state/ui/olark/selectors';
 
 class CancelPurchaseButton extends Component {
 	static propTypes = {
@@ -96,9 +97,14 @@ class CancelPurchaseButton extends Component {
 	};
 
 	changeSurveyStep = stepFunction => {
-		const { purchase, isChatAvailable, isChatActive } = this.props;
+		const { purchase, isChatAvailable, isChatActive, cancellationChatAvailable } = this.props;
 		const { surveyStep, survey } = this.state;
-		const steps = stepsForProductAndSurvey( survey, purchase, isChatAvailable || isChatActive );
+		const steps = stepsForProductAndSurvey(
+			survey,
+			purchase,
+			isChatAvailable || isChatActive,
+			cancellationChatAvailable
+		);
 		const newStep = stepFunction( surveyStep, steps );
 		this.recordEvent( 'calypso_purchases_cancel_survey_step', { new_step: newStep } );
 		this.setState( { surveyStep: newStep } );
@@ -368,6 +374,7 @@ export default connect(
 	state => ( {
 		isChatAvailable: isHappychatAvailable( state ),
 		isChatActive: hasActiveHappychatSession( state ),
+		cancellationChatAvailable: isCancellationChatAvailable( state ),
 	} ),
 	{
 		clearPurchases,
