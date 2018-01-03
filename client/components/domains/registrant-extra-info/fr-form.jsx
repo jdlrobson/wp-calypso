@@ -122,7 +122,7 @@ class RegistrantExtraInfoFrForm extends React.PureComponent {
 
 		return (
 			<form className="registrant-extra-info__form">
-				<p className="registrant-extra-info__form-desciption">
+				<p className="registrant-extra-info__form-description">
 					{ translate( 'Almost done! We need some extra details to register your %(tld)s domain.', {
 						args: { tld: '.fr' },
 					} ) }
@@ -154,14 +154,11 @@ class RegistrantExtraInfoFrForm extends React.PureComponent {
 
 				{ formIsValid
 					? this.props.children
-					: map(
-							castArray( this.props.children ),
-							( child, index ) =>
-									React.cloneElement( child, {
-										disabled: child.props.className.match( /submit-button/ ) ||
-											child.props.disabled,
-										key: index,
-									} )
+					: map( castArray( this.props.children ), ( child, index ) =>
+							React.cloneElement( child, {
+								disabled: child.props.className.match( /submit-button/ ) || child.props.disabled,
+								key: index,
+							} )
 						) }
 			</form>
 		);

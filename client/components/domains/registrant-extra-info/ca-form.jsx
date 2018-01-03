@@ -8,12 +8,12 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import { connect } from 'react-redux';
 import { localize } from 'i18n-calypso';
-import { camelCase, difference, isEmpty, keys, map, pick } from 'lodash';
+import { camelCase, difference, isEmpty, isEqual, keys, map, pick, debounce } from 'lodash';
 
 /**
  * Internal dependencies
  */
-import { getContactDetailsExtraCache } from 'state/selectors';
+import { getContactDetailsExtraCache, getContactDetailsCache } from 'state/selectors';
 import { getCurrentUserLocale } from 'state/current-user/selectors';
 import { updateContactDetailsCache } from 'state/domains/management/actions';
 import FormFieldset from 'components/forms/form-fieldset';
@@ -21,6 +21,7 @@ import FormLabel from 'components/forms/form-label';
 import FormSelect from 'components/forms/form-select';
 import FormCheckbox from 'components/forms/form-checkbox';
 import FormInputValidation from 'components/forms/form-input-validation';
+import { Input } from 'my-sites/domains/components/form';
 
 const ciraAgreementUrl = 'https://services.cira.ca/agree/agreement/agreementVersion2.0.jsp';
 const defaultValues = {
@@ -38,7 +39,7 @@ class RegistrantExtraInfoCaForm extends React.PureComponent {
 	constructor( props ) {
 		super( props );
 		const { translate } = props;
-		const legalTypes = {
+		this.legalTypes = {
 			CCT: translate( 'Canadian Citizen' ),
 			CCO: translate( 'Canadian Corporation' ),
 			RES: translate( 'Permanent Resident' ),
@@ -64,7 +65,7 @@ class RegistrantExtraInfoCaForm extends React.PureComponent {
 			INB: translate( 'Indian Band', {
 				comment:
 					'Refers to Canadian legal concept -- Indian meaning the ' +
-					'indigeonous people of North America and band meaning a small ' +
+					'indigenous people of North America and band meaning a small ' +
 					'group or community',
 			} ),
 			LGR: translate( 'Legal Representative' ),
@@ -73,16 +74,16 @@ class RegistrantExtraInfoCaForm extends React.PureComponent {
 			} ),
 			MAJ: translate( 'Her Majesty the Queen' ),
 		};
-		const legalTypeOptions = map( legalTypes, ( text, optionValue ) => (
+		const legalTypeOptions = map( this.legalTypes, ( text, optionValue ) => (
 			<option value={ optionValue } key={ optionValue }>
 				{ text }
 			</option>
 		) );
 
+		this.legalTypeOptions = legalTypeOptions;
+		this.validateOrganizationField = debounce( this.validateOrganizationField, 250 );
 		this.state = {
-			legalTypes,
-			legalTypeOptions,
-			uncheckedCiraAgreementFlag: false,
+			fieldErrors: [],
 		};
 	}
 
@@ -108,46 +109,104 @@ class RegistrantExtraInfoCaForm extends React.PureComponent {
 		} );
 	}
 
+	componentDidMount() {
+		this.validateOrganizationField();
+	}
+
+	componentDidUpdate( prevProps ) {
+		if (
+			! isEqual( prevProps.contactDetails.organization, this.props.contactDetails.organization ) ||
+			! isEqual( prevProps.contactDetailsExtra.legalType, this.props.contactDetailsExtra.legalType )
+		) {
+			this.validateOrganizationField();
+		}
+	}
+
 	handleChangeEvent = event => {
 		const { target } = event;
 		let value = target.value;
 
+		if ( target.name === 'organization' ) {
+			this.props.updateContactDetailsCache( {
+				[ target.name ]: value,
+			} );
+			return;
+		}
+
 		if ( target.type === 'checkbox' ) {
 			value = target.checked;
-			this.registerClick();
 		}
 
 		this.props.updateContactDetailsCache( {
-			extra: { [ camelCase( event.target.id ) ]: value },
+			extra: { [ camelCase( target.name ) ]: value },
 		} );
 	};
 
-	handleInvalidSubmit = event => {
-		event.preventDefault();
-		this.registerClick();
+	getIsOrganizationFieldValid() {
+		return isEmpty( this.state.fieldErrors );
+	}
+
+	validateOrganizationField = () => {
+		this.props.validateContactFields(
+			this.props.contactDetails,
+			this.updateOrganizationFieldErrorsState
+		);
 	};
 
-	registerClick = () => {
-		this.setState( { hasBeenClicked: true } );
+	updateOrganizationFieldErrorsState = ( error, messages ) => {
+		const { translate, contactDetails, contactDetailsExtra } = this.props;
+
+		let fieldErrors =
+			contactDetails.organization || contactDetailsExtra.legalType !== 'CCO'
+				? []
+				: [ translate( 'An organization name is required for Canadian corporations' ) ];
+
+		if ( messages.organization ) {
+			fieldErrors = fieldErrors.concat( messages.organization );
+		}
+
+		this.setState( {
+			fieldErrors,
+		} );
 	};
+
+	renderOrganizationField() {
+		const { translate, contactDetails } = this.props;
+
+		return (
+			<FormFieldset>
+				<Input
+					additionalClasses="registrant-extra-info__field"
+					label={ translate( 'Organization' ) }
+					id="organization"
+					value={ contactDetails.organization }
+					placeholder={ translate( 'Organization' ) }
+					onChange={ this.handleChangeEvent }
+					name="organization"
+					isError={ ! this.getIsOrganizationFieldValid() }
+					errorMessage={ this.state.fieldErrors[ 0 ] }
+				/>
+			</FormFieldset>
+		);
+	}
 
 	render() {
 		const { translate } = this.props;
-		const { legalTypeOptions, hasBeenClicked } = this.state;
 		const { legalType, ciraAgreementAccepted } = {
 			...defaultValues,
 			...this.props.contactDetailsExtra,
 		};
 
-		const validatingSubmitButton = ciraAgreementAccepted
-			? this.props.children
-			: React.cloneElement( this.props.children, { onClick: this.handleInvalidSubmit } );
+		const shouldRenderOrganizationField = legalType !== 'CCO';
 
-		const showValidationError = hasBeenClicked && ! ciraAgreementAccepted;
+		const validatingSubmitButton =
+			ciraAgreementAccepted && this.getIsOrganizationFieldValid()
+				? this.props.children
+				: React.cloneElement( this.props.children, { disabled: true } );
 
 		return (
 			<form className="registrant-extra-info__form">
-				<p className="registrant-extra-info__form-desciption">
+				<p className="registrant-extra-info__form-description">
 					{ translate( 'Almost done! We need some extra details to register your %(tld)s domain.', {
 						args: { tld: '.ca' },
 					} ) }
@@ -157,19 +216,19 @@ class RegistrantExtraInfoCaForm extends React.PureComponent {
 						{ translate( 'Choose the option that best describes your Canadian presence:' ) }
 					</FormLabel>
 					<FormSelect
-						id="legal-type"
+						name="legal-type"
 						value={ legalType }
 						className="registrant-extra-info__form-legal-type"
 						onChange={ this.handleChangeEvent }
 					>
-						{ legalTypeOptions }
+						{ this.legalTypeOptions }
 					</FormSelect>
 				</FormFieldset>
 				<FormFieldset>
 					<FormLabel htmlFor="legal-type">{ translate( 'CIRA Agreement' ) }</FormLabel>
-					<FormLabel>
+					<FormLabel className="registrant-extra-info__cira-agreement-accepted">
 						<FormCheckbox
-							id="cira-agreement-accepted"
+							name="cira-agreement-accepted"
 							checked={ ciraAgreementAccepted }
 							onChange={ this.handleChangeEvent }
 						/>
@@ -180,12 +239,12 @@ class RegistrantExtraInfoCaForm extends React.PureComponent {
 								},
 							} ) }
 						</span>
-						{ showValidationError ? (
+						{ ciraAgreementAccepted || (
 							<FormInputValidation text={ translate( 'Required' ) } isError={ true } />
-						) : null }
+						) }
 					</FormLabel>
 				</FormFieldset>
-
+				{ shouldRenderOrganizationField || this.renderOrganizationField() }
 				{ validatingSubmitButton }
 			</form>
 		);
@@ -195,6 +254,7 @@ class RegistrantExtraInfoCaForm extends React.PureComponent {
 export default connect(
 	state => ( {
 		contactDetailsExtra: getContactDetailsExtraCache( state ),
+		contactDetails: getContactDetailsCache( state ),
 		userWpcomLang: getCurrentUserLocale( state ),
 	} ),
 	{ updateContactDetailsCache }

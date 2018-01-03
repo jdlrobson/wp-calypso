@@ -4,8 +4,8 @@
 	margin: 0 0 5px;
 }
 
-.registrant-extra-info__form-desciption {
-	font-weight: 16px;
+.registrant-extra-info__form-description {
+	font-weight: normal;
 	margin: 0 0 1.7em;
 }
 
@@ -53,6 +53,13 @@
 	}
 }
 
+.registrant-extra-info__field {
+	margin-top: 0;
+}
+
+.registrant-extra-info__cira-agreement-accepted span {
+	font-weight: normal;
+}
 
 .registrant-extra-info__dob-column {
 	display: flex;

@@ -201,7 +201,11 @@ export class DomainDetailsForm extends PureComponent {
 	}
 
 	renderExtraDetailsForm( tld ) {
-		return <ExtraInfoForm tld={ tld }>{ this.renderSubmitButton() }</ExtraInfoForm>;
+		return (
+			<ExtraInfoForm tld={ tld } validateContactFields={ this.validate }>
+				{ this.renderSubmitButton() }
+			</ExtraInfoForm>
+		);
 	}
 
 	handleRadioChange = enable => {
