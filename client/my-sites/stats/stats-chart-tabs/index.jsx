@@ -1,12 +1,10 @@
 /** @format */
-
 /**
  * External dependencies
  */
-
-import React, { Component } from 'react';
+import * as React from 'react';
 import classNames from 'classnames';
-import { find, flowRight } from 'lodash';
+import { find, flowRight, isEqual } from 'lodash';
 import { connect } from 'react-redux';
 import { localize } from 'i18n-calypso';
 
@@ -28,7 +26,7 @@ import { recordGoogleEvent } from 'state/analytics/actions';
 import { rangeOfPeriod } from 'state/stats/lists/utils';
 import { getSiteOption } from 'state/sites/selectors';
 
-class StatModuleChartTabs extends Component {
+class StatsChartTabs extends React.PureComponent {
 	constructor( props ) {
 		super( props );
 		const activeTab = this.getActiveTab();
@@ -219,7 +217,15 @@ class StatModuleChartTabs extends Component {
 	}
 
 	render() {
-		const { fullQuery, quickQuery, quickQueryRequesting, fullQueryRequesting, siteId } = this.props;
+		console.count( 'tabRender' );
+		const {
+			fullQueryFields,
+			fullQueryRequesting,
+			query,
+			quickQueryFields,
+			quickQueryRequesting,
+			siteId,
+		} = this.props;
 		const chartData = this.buildChartData();
 		const activeTab = this.getActiveTab();
 		let availableCharts = [];
@@ -240,10 +246,18 @@ class StatModuleChartTabs extends Component {
 		return (
 			<div>
 				{ siteId && (
-					<QuerySiteStats statType="statsVisits" siteId={ siteId } query={ quickQuery } />
+					<QuerySiteStats
+						statType="statsVisits"
+						siteId={ siteId }
+						query={ { ...query, stat_fields: quickQueryFields } }
+					/>
 				) }
 				{ siteId && (
-					<QuerySiteStats statType="statsVisits" siteId={ siteId } query={ fullQuery } />
+					<QuerySiteStats
+						statType="statsVisits"
+						siteId={ siteId }
+						query={ { ...query, stat_fields: fullQueryFields } }
+					/>
 				) }
 				<Card className={ classNames( ...classes ) }>
 					<Legend
@@ -273,20 +287,18 @@ class StatModuleChartTabs extends Component {
 	}
 }
 
+let prev = {};
 const connectComponent = connect(
 	( state, { moment, period: periodObject, chartTab, queryDate } ) => {
+		console.count( 'tabConnect' );
 		const siteId = getSelectedSiteId( state );
 		const { period } = periodObject;
 		const timezoneOffset = getSiteOption( state, siteId, 'gmt_offset' ) || 0;
 		const momentSiteZone = moment().utcOffset( timezoneOffset );
 		let date = rangeOfPeriod( period, momentSiteZone.locale( 'en' ) ).endOf;
 
-		let quantity = 30;
-		switch ( period ) {
-			case 'year':
-				quantity = 10;
-				break;
-		}
+		const quantity = 'year' === period ? 10 : 30;
+
 		const periodDifference = moment( date ).diff( moment( queryDate ), period );
 		if ( periodDifference >= quantity ) {
 			date = moment( date )
@@ -294,27 +306,20 @@ const connectComponent = connect(
 				.format( 'YYYY-MM-DD' );
 		}
 
-		let quickQueryFields = chartTab;
 		// If we are on the default Tab, grab visitors too
-		if ( 'views' === quickQueryFields ) {
-			quickQueryFields = 'views,visitors';
-		}
+		const quickQueryFields = 'views' === chartTab ? 'views,visitors' : chartTab;
 
-		const query = {
-			unit: period,
-			date,
-			quantity,
-		};
-		const quickQuery = {
-			...query,
-			stat_fields: quickQueryFields,
-		};
-		const fullQuery = {
-			...query,
-			stat_fields: 'views,visitors,likes,comments,post_titles',
-		};
+		const query = { unit: period, date, quantity };
+		const sameQuery = prev.query && isEqual( prev.query, query );
+		console.log( `isSameQuery: ${ sameQuery }` );
 
-		return {
+		const quickQuery = { ...query, stat_fields: quickQueryFields };
+		const fullQuery =
+			sameQuery && prev.fullQuery
+				? prev.fullQuery
+				: { ...query, stat_fields: 'views,visitors,likes,comments,post_titles' };
+
+		const next = {
 			quickQueryRequesting: isRequestingSiteStatsForQuery(
 				state,
 				siteId,
@@ -322,14 +327,23 @@ const connectComponent = connect(
 				quickQuery
 			),
 			quickQueryData: getSiteStatsNormalizedData( state, siteId, 'statsVisits', quickQuery ),
+			quickQueryFields,
+			fullQueryFields: 'views,visitors,likes,comments,post_titles',
 			fullQueryRequesting: isRequestingSiteStatsForQuery( state, siteId, 'statsVisits', fullQuery ),
 			fullQueryData: getSiteStatsNormalizedData( state, siteId, 'statsVisits', fullQuery ),
-			quickQuery,
-			fullQuery,
+			query,
 			siteId,
 		};
+
+		if ( isEqual( prev, next ) ) {
+			return prev;
+		}
+
+		prev = next;
+
+		return next;
 	},
 	{ recordGoogleEvent }
 );
 
-export default flowRight( localize, connectComponent )( StatModuleChartTabs );
+export default flowRight( localize, connectComponent )( StatsChartTabs );
