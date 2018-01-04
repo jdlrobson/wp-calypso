@@ -20,6 +20,8 @@ import {
 	isOlarkTimedOut,
 	isChatAvailable,
 	isRequestingOlark,
+	isCancellationChatAvailable,
+	isPresalesChatAvailable,
 } from '../selectors';
 
 describe( 'selectors', () => {
@@ -174,6 +176,60 @@ describe( 'selectors', () => {
 				},
 			} );
 			expect( isRequesting ).to.equal( true );
+		} );
+	} );
+
+	describe( '#isCancellationChatAvailable()', () => {
+		test( 'should return false if cancellation chat is not available', () => {
+			const isCancellationAvailable = isCancellationChatAvailable( {
+				ui: {
+					olark: {
+						availability: {
+							precancellation: false,
+						},
+					},
+				},
+			} );
+			expect( isCancellationAvailable ).to.equal( false );
+		} );
+		test( 'should return true if cancellation chat is available', () => {
+			const isCancellationAvailable = isCancellationChatAvailable( {
+				ui: {
+					olark: {
+						availability: {
+							precancellation: true,
+						},
+					},
+				},
+			} );
+			expect( isCancellationAvailable ).to.equal( true );
+		} );
+	} );
+
+	describe( '#isPresalesChatAvailable()', () => {
+		test( 'should return false if presales chat is not available', () => {
+			const isPresaleAvailable = isPresalesChatAvailable( {
+				ui: {
+					olark: {
+						availability: {
+							presale: false,
+						},
+					},
+				},
+			} );
+			expect( isPresaleAvailable ).to.equal( false );
+		} );
+		test( 'should return true if presales chat is available', () => {
+			const isPresaleAvailable = isPresalesChatAvailable( {
+				ui: {
+					olark: {
+						availability: {
+							presale: true,
+						},
+					},
+				},
+			} );
+			expect( isPresaleAvailable ).to.equal( true );
 		} );
 	} );
 } );
