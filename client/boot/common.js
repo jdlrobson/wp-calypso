@@ -74,7 +74,7 @@ const setupContextMiddleware = reduxStore => {
 };
 
 // We need to require sections to load React with i18n mixin
-const loadSectionsMiddleware = () => require( 'sections' ).load();
+const loadSectionsMiddleware = () => require( 'sections-middleware' ).load();
 
 const loggedOutMiddleware = currentUser => {
 	if ( currentUser.get() ) {
@@ -95,7 +95,7 @@ const loggedOutMiddleware = currentUser => {
 		} );
 	}
 
-	const sections = require( 'sections' );
+	const sections = require( 'sections-middleware' );
 	const validSections = sections.get().reduce( ( acc, section ) => {
 		return section.enableLoggedOut ? acc.concat( section.paths ) : acc;
 	}, [] );

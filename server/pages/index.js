@@ -17,7 +17,7 @@ import { get, pick, forEach, intersection } from 'lodash';
 import config from 'config';
 import sanitize from 'sanitize';
 import utils from 'bundler/utils';
-import sectionsModule from '../../client/sections';
+import sectionsModule from 'sections-middleware';
 import { serverRouter, getCacheKey } from 'isomorphic-routing';
 import { serverRender, serverRenderError } from 'render';
 import stateCache from 'state-cache';

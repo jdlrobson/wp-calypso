@@ -108,11 +108,6 @@ const webpackConfig = {
 				loader: path.join( __dirname, 'server', 'bundler', 'extensions-loader' ),
 			},
 			{
-				test: /sections.js$/,
-				exclude: path.join( __dirname, 'node_modules' ),
-				loader: path.join( __dirname, 'server', 'bundler', 'loader' ),
-			},
-			{
 				test: /\.html$/,
 				loader: 'html-loader',
 			},
