@@ -4,24 +4,30 @@
  */
 import config from 'config';
 import page from 'page';
-// import React from 'react';
-import { find, groupBy, toPairs, partial } from 'lodash';
-// import utils = require( './utils' );
+import { find, groupBy, toPairs, partial, escapeRegExp } from 'lodash';
 
 /**
  * Internal dependencies
  */
-import sectionsUtils from 'lib/sections-utils';
 import { activateNextLayoutFocus } from 'state/ui/layout-focus/actions';
-
-import LoadingError from 'layout/error';
-import controller from 'controller';
+import utils from '../server/bundler/utils';
+import * as LoadingError from 'layout/error';
+import * as controller from './controller/index.web';
 import { restoreLastSession } from 'lib/restore-last-path';
-import { preloadHub } from 'sections-preload';
+import { hub as preloadHub } from 'sections-preload';
 import { switchCSS } from 'lib/i18n-utils/switch-locale';
 
 import sections from './sections';
-const sectionsWithCss = sectionsWithCssUrls( sections );
+
+const sectionsWithCss = sections.map( section => ( {
+	...section,
+	...( section.css && {
+		css: {
+			id: section.css,
+			urls: utils.getCssUrls( section.css ),
+		},
+	} ),
+} ) );
 
 const _loadedSections = {};
 
@@ -48,13 +54,70 @@ function preload( sectionName ) {
 		return Promise.reject( `Attempting to load non-existent section: ${ sectionName }` );
 	}
 
-	if ( async ) {
-		const chunk = import( /* webpackChunkName: `${section.name}` */ section.module );
-		return chunk;
-	}
+	// if ( async ) {
+	const chunk = moduleToImport[ section.module ];
+	return chunk;
+	// }
 
-	return require( section.module );
+	// @TODO: get non-async mode working
+	// return require( section.module );
 }
+
+const moduleToImport = {
+	'jetpack-connect': import( /* webpackChunkName: "'jetpack-connect'" */ 'jetpack-connect' ),
+	'jetpack-onboarding': import( /* webpackChunkName: "'jetpack-onboarding'" */ 'jetpack-onboarding' ),
+	'mailing-lists': import( /* webpackChunkName: "'mailing-lists'" */ 'mailing-lists' ),
+	me: import( /* webpackChunkName: "'me'" */ 'me' ),
+	'me/account': import( /* webpackChunkName: "'me/account'" */ 'me/account' ),
+	'me/concierge': import( /* webpackChunkName: "'me/concierge'" */ 'me/concierge' ),
+	'me/notification-settings': import( /* webpackChunkName: "'me/notification-settings'" */ 'me/notification-settings' ),
+	'me/purchases': import( /* webpackChunkName: "'me/purchases'" */ 'me/purchases' ),
+	'me/security': import( /* webpackChunkName: "'me/security'" */ 'me/security' ),
+	'my-sites': import( /* webpackChunkName: "'my-sites'" */ 'my-sites' ),
+	'my-sites/ads': import( /* webpackChunkName: "'my-sites/ads'" */ 'my-sites/ads' ),
+	'my-sites/checklist': import( /* webpackChunkName: "'my-sites/checklist'" */ 'my-sites/checklist' ),
+	'my-sites/checkout': import( /* webpackChunkName: "'my-sites/checkout'" */ 'my-sites/checkout' ),
+	'my-sites/customize': import( /* webpackChunkName: "'my-sites/customize'" */ 'my-sites/customize' ),
+	'my-sites/domains': import( /* webpackChunkName: "'my-sites/domains'" */ 'my-sites/domains' ),
+	'my-sites/invites': import( /* webpackChunkName: "'my-sites/invites'" */ 'my-sites/invites' ),
+	'my-sites/media': import( /* webpackChunkName: "'my-sites/media'" */ 'my-sites/media' ),
+	'my-sites/pages': import( /* webpackChunkName: "'my-sites/pages'" */ 'my-sites/pages' ),
+	'my-sites/paladin': import( /* webpackChunkName: "'my-sites/paladin'" */ 'my-sites/paladin' ),
+	'my-sites/people': import( /* webpackChunkName: "'my-sites/people'" */ 'my-sites/people' ),
+	'my-sites/plans': import( /* webpackChunkName: "'my-sites/plans'" */ 'my-sites/plans' ),
+	'my-sites/plugins': import( /* webpackChunkName: "'my-sites/plugins'" */ 'my-sites/plugins' ),
+	'my-sites/posts': import( /* webpackChunkName: "'my-sites/posts'" */ 'my-sites/posts' ),
+	'my-sites/sharing': import( /* webpackChunkName: "'my-sites/sharing'" */ 'my-sites/sharing' ),
+	'my-sites/site-settings': import( /* webpackChunkName: "'my-sites/site-settings'" */ 'my-sites/site-settings' ),
+	'my-sites/site-settings/settings-discussion': import( /* webpackChunkName: "'my-sites/site-settings/settings-discussion'" */ 'my-sites/site-settings/settings-discussion' ),
+	'my-sites/site-settings/settings-security': import( /* webpackChunkName: "'my-sites/site-settings/settings-security'" */ 'my-sites/site-settings/settings-security' ),
+	'my-sites/site-settings/settings-traffic': import( /* webpackChunkName: "'my-sites/site-settings/settings-traffic'" */ 'my-sites/site-settings/settings-traffic' ),
+	'my-sites/site-settings/settings-writing': import( /* webpackChunkName: "'my-sites/site-settings/settings-writing'" */ 'my-sites/site-settings/settings-writing' ),
+	'my-sites/stats': import( /* webpackChunkName: "'my-sites/stats'" */ 'my-sites/stats' ),
+	'my-sites/theme': import( /* webpackChunkName: "'my-sites/theme'" */ 'my-sites/theme' ),
+	'my-sites/themes': import( /* webpackChunkName: "'my-sites/themes'" */ 'my-sites/themes' ),
+	signup: import( /* webpackChunkName: "'signup'" */ 'signup' ),
+	'account-recovery': import( /* webpackChunkName: "'account-recovery'" */ 'account-recovery' ),
+	auth: import( /* webpackChunkName: "'auth'" */ 'auth' ),
+	login: import( /* webpackChunkName: "'login'" */ 'login' ),
+	'me/happychat': import( /* webpackChunkName: "'me/happychat'" */ 'me/happychat' ),
+	'me/help': import( /* webpackChunkName: "'me/help'" */ 'me/help' ),
+	'my-sites/comments': import( /* webpackChunkName: "'my-sites/comments'" */ 'my-sites/comments' ),
+	'my-sites/domains/domain-management/domain-connect': import( /* webpackChunkName: "'my-sites/domains/domain-management/domain-connect'" */ 'my-sites/domains/domain-management/domain-connect' ),
+	'my-sites/preview': import( /* webpackChunkName: "'my-sites/preview'" */ 'my-sites/preview' ),
+	'my-sites/types': import( /* webpackChunkName: "'my-sites/types'" */ 'my-sites/types' ),
+	'post-editor': import( /* webpackChunkName: "'post-editor'" */ 'post-editor' ),
+	reader: import( /* webpackChunkName: "'reader'" */ 'reader' ),
+	'reader/conversations': import( /* webpackChunkName: "'reader/conversations'" */ 'reader/conversations' ),
+	'reader/discover': import( /* webpackChunkName: "'reader/discover'" */ 'reader/discover' ),
+	'reader/following': import( /* webpackChunkName: "'reader/following'" */ 'reader/following' ),
+	'reader/full-post': import( /* webpackChunkName: "'reader/full-post'" */ 'reader/full-post' ),
+	'reader/liked-stream': import( /* webpackChunkName: "'reader/liked-stream'" */ 'reader/liked-stream' ),
+	'reader/list': import( /* webpackChunkName: "'reader/list'" */ 'reader/list' ),
+	'reader/recommendations': import( /* webpackChunkName: "'reader/recommendations'" */ 'reader/recommendations' ),
+	'reader/search': import( /* webpackChunkName: "'reader/search'" */ 'reader/search' ),
+	'reader/tag-stream': import( /* webpackChunkName: "'reader/tag-stream'" */ 'reader/tag-stream' ),
+};
 
 preloadHub.on( 'preload', preload );
 
@@ -68,7 +131,7 @@ function activateSection( sectionDefinition, context, next ) {
 }
 
 function createPageDefinition( path, sectionDefinition ) {
-	var pathRegex = sectionsUtils.pathToRegExp( path );
+	var pathRegex = utils.pathToRegExp( path );
 
 	page( pathRegex, function( context, next ) {
 		var envId = sectionDefinition.envId,
@@ -84,17 +147,16 @@ function createPageDefinition( path, sectionDefinition ) {
 			return;
 		}
 		dispatch( { type: 'SECTION_SET', isLoading: true } );
-		preload( sectionDefinition.name ).then(
-			function( requiredModules ) {
+		preload( sectionDefinition.name )
+			.then( requiredModules => {
 				if ( ! _loadedSections[ sectionDefinition.module ] ) {
-					requiredModules.forEach( function moduleIterator( mod ) {
-						mod( controller.clientRouter );
-					} );
+					requiredModules( controller.clientRouter );
+					// requiredModules.forEach( mod => mod( controller.clientRouter ) ); // if we do array
 					_loadedSections[ sectionDefinition.module ] = true;
 				}
 				return activateSection( sectionDefinition, context, next );
-			},
-			function onError( error ) {
+			} )
+			.catch( error => {
 				if ( ! LoadingError.isRetry() ) {
 					console.warn( error );
 					LoadingError.retry( sectionDefinition.name );
@@ -103,27 +165,15 @@ function createPageDefinition( path, sectionDefinition ) {
 					dispatch( { type: 'SECTION_SET', isLoading: false } );
 					LoadingError.show( sectionDefinition.name );
 				}
-			}
-		);
+			} );
 	} );
 }
 
-function sectionsWithCSSUrls( sections ) {
-	return sections.map( section =>
-		Object.assign(
-			{},
-			section,
-			section.css && {
-				css: {
-					id: section.css,
-					urls: utils.getCssUrls( section.css ),
-				},
-			}
-		)
-	);
-}
-
 export default {
-	get: sectionsUtils.getSectionsFactory( sections ),
-	load: sectionsUtils.loadSectionsFactory( sections, createPageDefinition ),
+	get: () => sections,
+	load: () => {
+		sections.forEach( section =>
+			section.paths.forEach( path => createPageDefinition( path, section ) )
+		);
+	},
 };
