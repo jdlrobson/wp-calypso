@@ -59,7 +59,7 @@ function preload( sectionName ) {
 preloadHub.on( 'preload', preload );
 
 function activateSection( sectionDefinition, context, next ) {
-	var dispatch = context.store.dispatch;
+	const dispatch = context.store.dispatch;
 
 	controller.setSection( sectionDefinition )( context );
 	dispatch( { type: 'SECTION_SET', isLoading: false } );
@@ -68,11 +68,11 @@ function activateSection( sectionDefinition, context, next ) {
 }
 
 function createPageDefinition( path, sectionDefinition ) {
-	var pathRegex = utils.pathToRegExp( path );
+	const pathRegex = utils.pathToRegExp( path );
 
 	page( pathRegex, function( context, next ) {
-		var envId = sectionDefinition.envId,
-			dispatch = context.store.dispatch;
+		const envId = sectionDefinition.envId;
+		const dispatch = context.store.dispatch;
 
 		if ( envId && envId.indexOf( config( 'env_id' ) ) === -1 ) {
 			return next();
@@ -93,7 +93,7 @@ function createPageDefinition( path, sectionDefinition ) {
 				return activateSection( sectionDefinition, context, next );
 			} )
 			.catch( error => {
-				console.warn( error );
+				console.error( error ); // eslint-disable-line
 				if ( ! LoadingError.isRetry() ) {
 					LoadingError.retry( sectionDefinition.name );
 				} else {
