@@ -5,8 +5,9 @@
  */
 import loader from '../sections-loader';
 const addModuleImportToSections = loader.addModuleImportToSections;
+const withCss = loader.withCss;
 
-describe( 'sections-loader tests', () => {
+describe( '#addModuleImportToSections', () => {
 	test( 'should insert a load fn to each section using import() if code splitting is turned on', () => {
 		const sections = [
 			{
@@ -41,5 +42,40 @@ describe( 'sections-loader tests', () => {
 	}
 ]`;
 		expect( addModuleImportToSections( { sections, shouldSplit: false } ) ).toBe( expected );
+	} );
+} );
+
+describe( '#withCss', () => {
+	test( 'should not modify a section without css in it', () => {
+		const sections = [
+			{
+				name: 'moduleName',
+				module: 'module-to-require',
+			},
+		];
+		expect( withCss( sections ) ).toEqual( sections );
+	} );
+
+	test( 'add ltr and rtl filenames to section with css key in it', () => {
+		const sections = [
+			{
+				name: 'moduleName',
+				module: 'module-to-require',
+				css: 14,
+			},
+		];
+		expect( withCss( sections ) ).toEqual( [
+			{
+				name: 'moduleName',
+				module: 'module-to-require',
+				css: {
+					id: 14,
+					urls: {
+						ltr: expect.any( String ),
+						rtl: expect.any( String ),
+					},
+				},
+			},
+		] );
 	} );
 } );

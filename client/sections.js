@@ -12,16 +12,7 @@ const path = require( 'path' );
  */
 const config = require( 'config' );
 const sections = config( 'project' ) === 'wordpress-com' ? require( 'wordpress-com' ) : [];
-// const extensions = require( './extensions' );
-// @TODO remove hack
-const extensions = [
-	'hello-dolly',
-	'sensei',
-	'woocommerce',
-	'wp-job-manager',
-	'wp-super-cache',
-	'zoninator',
-];
+const extensions = require( './extensions' );
 
 const extensionSections = extensions.map( extension => {
 	try {
