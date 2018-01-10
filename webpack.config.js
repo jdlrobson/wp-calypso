@@ -108,6 +108,11 @@ const webpackConfig = {
 				loader: path.join( __dirname, 'server', 'bundler', 'extensions-loader' ),
 			},
 			{
+				test: /sections.js$/,
+				exclude: path.join( __dirname, 'node_modules' ),
+				loader: path.join( __dirname, 'server', 'bundler', 'sections-loader' ),
+			},
+			{
 				test: /\.html$/,
 				loader: 'html-loader',
 			},
@@ -178,6 +183,7 @@ const webpackConfig = {
 			if ( chunk.name ) {
 				return chunk.name;
 			}
+
 			return chunk.modules.map( m => path.relative( m.context, m.request ) ).join( '_' );
 		} ),
 		new NameAllModulesPlugin(),
