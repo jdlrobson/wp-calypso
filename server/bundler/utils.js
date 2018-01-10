@@ -7,8 +7,7 @@ const HASH_LENGTH = 10;
 const URL_BASE_PATH = '/calypso';
 const SERVER_BASE_PATH = '/public';
 
-// Adapts route paths to also include wildcard
-// subroutes under the root level section.
+// TODO: delete this in favor of the version inside of sections-loader
 function pathToRegExp( path ) {
 	// Prevents root level double dash urls from being validated.
 	if ( path === '/' ) {

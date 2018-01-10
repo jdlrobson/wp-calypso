@@ -10,30 +10,19 @@ import { find, filter, isEmpty } from 'lodash';
  * Internal dependencies
  */
 import { activateNextLayoutFocus } from 'state/ui/layout-focus/actions';
-import utils from '../server/bundler/utils';
 import * as LoadingError from 'layout/error';
 import * as controller from './controller/index.web';
 import { restoreLastSession } from 'lib/restore-last-path';
 import { hub as preloadHub } from 'sections-preload';
 import { switchCSS } from 'lib/i18n-utils/switch-locale';
 
-import baseSections from './sections';
-
-const sectionsWithCss = baseSections.map( section => ( {
-	...section,
-	...( section.css && {
-		css: {
-			id: section.css,
-			urls: utils.getCssUrls( section.css ),
-		},
-	} ),
-} ) );
+import sections from './sections';
 
 const _loadedSections = {};
 
 function maybeLoadCSS( sectionName ) {
 	//eslint-disable-line no-unused-vars
-	const section = find( sectionsWithCss, elem => elem.name === sectionName );
+	const section = find( sections, { name: sectionName } );
 
 	if ( ! ( section && section.css ) ) {
 		return;
@@ -49,11 +38,11 @@ function maybeLoadCSS( sectionName ) {
 
 function preload( sectionName ) {
 	maybeLoadCSS( sectionName );
-	const sections = filter( sectionsWithCss, { name: sectionName } );
+	const filteredSections = filter( sections, { name: sectionName } );
 	if ( isEmpty( sections ) ) {
 		return Promise.reject( `Attempting to load non-existent section: ${ sectionName }` );
 	}
-	return Promise.all( sections.map( section => section.load() ) );
+	return Promise.all( filteredSections.map( section => section.load() ) );
 }
 
 preloadHub.on( 'preload', preload );
@@ -68,7 +57,7 @@ function activateSection( sectionDefinition, context, next ) {
 }
 
 function createPageDefinition( path, sectionDefinition ) {
-	const pathRegex = utils.pathToRegExp( path );
+	const pathRegex = pathToRegExp( path );
 
 	page( pathRegex, function( context, next ) {
 		const envId = sectionDefinition.envId;
@@ -104,10 +93,20 @@ function createPageDefinition( path, sectionDefinition ) {
 	} );
 }
 
-export const getSections = () => sectionsWithCss;
+export const getSections = () => sections;
 
 export const setupRoutes = () => {
-	sectionsWithCss.forEach( section =>
+	sections.forEach( section =>
 		section.paths.forEach( path => createPageDefinition( path, section ) )
 	);
 };
+
+// Adapts route paths to also include wildcard
+// subroutes under the root level section.
+export function pathToRegExp( path ) {
+	// Prevents root level double dash urls from being validated.
+	if ( path === '/' ) {
+		return path;
+	}
+	return new RegExp( '^' + path + '(/.*)?$' );
+}

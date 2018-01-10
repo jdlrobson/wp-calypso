@@ -1,5 +1,6 @@
 /** @format */
 const config = require( 'config' );
+const utils = require( './utils' );
 
 /*
  * This sections-loader has just one responsibility.
@@ -31,10 +32,30 @@ function addModuleImportToSections( { sections, shouldSplit } ) {
 	return sectionsFile;
 }
 
+function withCss( sections ) {
+	return sections.map( section => ( {
+		...section,
+		...( section.css && {
+			css: {
+				id: section.css,
+				urls: utils.getCssUrls( section.css ),
+			},
+		} ),
+	} ) );
+}
+
 const loader = function() {
 	const sections = require( this.resourcePath );
+	const sectionsWithCss = withCss( sections );
+
+	console.error(
+		addModuleImportToSections( {
+			sections: sectionsWithCss,
+			shouldSplit: config.isEnabled( 'code-splitting' ),
+		} )
+	);
 	return addModuleImportToSections( {
-		sections,
+		sections: sectionsWithCss,
 		shouldSplit: config.isEnabled( 'code-splitting' ),
 	} );
 };
