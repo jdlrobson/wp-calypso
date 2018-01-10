@@ -15,6 +15,7 @@ import * as controller from './controller/index.web';
 import { restoreLastSession } from 'lib/restore-last-path';
 import { hub as preloadHub } from 'sections-preload';
 import { switchCSS } from 'lib/i18n-utils/switch-locale';
+import { pathToRegExp } from './utils';
 
 import sections from './sections';
 
@@ -100,13 +101,3 @@ export const setupRoutes = () => {
 		section.paths.forEach( path => createPageDefinition( path, section ) )
 	);
 };
-
-// Adapts route paths to also include wildcard
-// subroutes under the root level section.
-export function pathToRegExp( path ) {
-	// Prevents root level double dash urls from being validated.
-	if ( path === '/' ) {
-		return path;
-	}
-	return new RegExp( '^' + path + '(/.*)?$' );
-}

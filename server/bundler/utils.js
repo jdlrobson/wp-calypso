@@ -1,4 +1,7 @@
 /** @format */
+/**
+ * External dependencies
+ */
 const crypto = require( 'crypto' );
 const fs = require( 'fs' );
 const qs = require( 'qs' );
@@ -6,15 +9,6 @@ const qs = require( 'qs' );
 const HASH_LENGTH = 10;
 const URL_BASE_PATH = '/calypso';
 const SERVER_BASE_PATH = '/public';
-
-// TODO: delete this in favor of the version inside of sections-loader
-function pathToRegExp( path ) {
-	// Prevents root level double dash urls from being validated.
-	if ( path === '/' ) {
-		return path;
-	}
-	return new RegExp( '^' + path + '(/.*)?$' );
-}
 
 function hashFile( path ) {
 	const md5 = crypto.createHash( 'md5' );
@@ -56,7 +50,6 @@ function getCssUrls( css ) {
 }
 
 module.exports = {
-	pathToRegExp: pathToRegExp,
 	hashFile: hashFile,
 	getUrl: getUrl,
 	getCssUrls: getCssUrls,
