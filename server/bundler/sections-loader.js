@@ -18,10 +18,7 @@ const utils = require( './utils' );
 
 function addModuleImportToSections( { sections, shouldSplit } ) {
 	sections.forEach( section => {
-		const loaderFunction = ( () => require( /* webpackChunkName: 'CHUNK_NAME' */ section.module ) )
-			.toString()
-			.replace( 'CHUNK_NAME', section.name )
-			.replace( 'section.module', `'${ section.module }'` );
+		const loaderFunction = `function() { return require( /* webpackChunkName: '${ section.name }' */ '${ section.module }'); }`;
 
 		section.load = shouldSplit ? loaderFunction.replace( 'require', 'import' ) : loaderFunction;
 	} );

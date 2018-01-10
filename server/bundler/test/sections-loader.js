@@ -20,7 +20,7 @@ describe( '#addModuleImportToSections', () => {
 	{
 		"name": "moduleName",
 		"module": "module-to-require",
-		"load": function () {return import( /* webpackChunkName: 'moduleName' */'module-to-require');}
+		"load": function() { return import( /* webpackChunkName: 'moduleName' */ 'module-to-require'); }
 	}
 ]`;
 		expect( addModuleImportToSections( { sections, shouldSplit: true } ) ).toBe( expected );
@@ -38,7 +38,7 @@ describe( '#addModuleImportToSections', () => {
 	{
 		"name": "moduleName",
 		"module": "module-to-require",
-		"load": function () {return require( /* webpackChunkName: 'moduleName' */'module-to-require');}
+		"load": function() { return require( /* webpackChunkName: 'moduleName' */ 'module-to-require'); }
 	}
 ]`;
 		expect( addModuleImportToSections( { sections, shouldSplit: false } ) ).toBe( expected );
