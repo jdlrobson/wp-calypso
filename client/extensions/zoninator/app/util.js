@@ -12,7 +12,7 @@ import { find, get } from 'lodash';
 import sectionsModule from 'sections-middleware';
 
 const getSettingsPath = () => {
-	const sections = sectionsModule.get();
+	const sections = sectionsModule.getSections();
 	const section = find( sections, value => value.name === 'zoninator' );
 
 	return get( section, 'settings_path' );

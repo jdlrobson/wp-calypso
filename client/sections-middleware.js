@@ -4,7 +4,7 @@
  */
 import config from 'config';
 import page from 'page';
-import { find } from 'lodash';
+import { find, filter, isEmpty } from 'lodash';
 
 /**
  * Internal dependencies
@@ -17,9 +17,9 @@ import { restoreLastSession } from 'lib/restore-last-path';
 import { hub as preloadHub } from 'sections-preload';
 import { switchCSS } from 'lib/i18n-utils/switch-locale';
 
-import sections from './sections';
+import baseSections from './sections';
 
-const sectionsWithCss = sections.map( section => ( {
+const sectionsWithCss = baseSections.map( section => ( {
 	...section,
 	...( section.css && {
 		css: {
@@ -49,11 +49,11 @@ function maybeLoadCSS( sectionName ) {
 
 function preload( sectionName ) {
 	maybeLoadCSS( sectionName );
-	const section = find( sections, { name: sectionName } );
-	if ( ! section ) {
+	const sections = filter( sectionsWithCss, { name: sectionName } );
+	if ( isEmpty( sections ) ) {
 		return Promise.reject( `Attempting to load non-existent section: ${ sectionName }` );
 	}
-	return Promise.resolve( section.load() );
+	return Promise.all( sections.map( section => section.load() ) );
 }
 
 preloadHub.on( 'preload', preload );
@@ -87,18 +87,16 @@ function createPageDefinition( path, sectionDefinition ) {
 		preload( sectionDefinition.name )
 			.then( requiredModules => {
 				if ( ! _loadedSections[ sectionDefinition.module ] ) {
-					requiredModules( controller.clientRouter );
-					// requiredModules.forEach( mod => mod( controller.clientRouter ) ); // if we do array
+					requiredModules.forEach( mod => mod( controller.clientRouter ) ); // if we do array
 					_loadedSections[ sectionDefinition.module ] = true;
 				}
 				return activateSection( sectionDefinition, context, next );
 			} )
 			.catch( error => {
+				console.warn( error );
 				if ( ! LoadingError.isRetry() ) {
-					console.warn( error );
 					LoadingError.retry( sectionDefinition.name );
 				} else {
-					console.error( error );
 					dispatch( { type: 'SECTION_SET', isLoading: false } );
 					LoadingError.show( sectionDefinition.name );
 				}
@@ -106,11 +104,10 @@ function createPageDefinition( path, sectionDefinition ) {
 	} );
 }
 
-export default {
-	get: () => sections,
-	load: () => {
-		sections.forEach( section =>
-			section.paths.forEach( path => createPageDefinition( path, section ) )
-		);
-	},
+export const getSections = () => sectionsWithCss;
+
+export const setupRoutes = () => {
+	sectionsWithCss.forEach( section =>
+		section.paths.forEach( path => createPageDefinition( path, section ) )
+	);
 };

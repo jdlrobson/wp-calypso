@@ -32,7 +32,7 @@ class Navigation extends Component {
 	};
 
 	getSettingsPath() {
-		const sections = sectionsModule.get();
+		const sections = sectionsModule.getSections();
 		const section = find( sections, value => value.name === 'wp-job-manager' );
 
 		return get( section, 'settings_path' );
