@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { localize } from 'i18n-calypso';
-import { isEmpty, omit, debounce } from 'lodash';
+import { isEmpty, omit, debounce, difference } from 'lodash';
 import page from 'page';
 
 /**
@@ -35,6 +35,7 @@ import {
 import { getLink } from 'woocommerce/lib/nav-utils';
 import ProductCategoryForm from './form';
 import ProductCategoryHeader from './header';
+import { recordTrack } from 'woocommerce/lib/analytics';
 import { successNotice, errorNotice } from 'state/notices/actions';
 
 class ProductCategoryUpdate extends React.Component {
@@ -88,6 +89,14 @@ class ProductCategoryUpdate extends React.Component {
 		}
 	}
 
+	onEditStart = initial_field => {
+		const { category } = this.props;
+		recordTrack( 'calypso_woocommerce_product_category_existing_edit_start', {
+			id: category.id,
+			initial_field,
+		} );
+	};
+
 	onDelete = () => {
 		const { translate, site, category, deleteProductCategory: dispatchDelete } = this.props;
 		const areYouSure = translate( "Are you sure you want to permanently delete '%(name)s'?", {
@@ -115,11 +124,18 @@ class ProductCategoryUpdate extends React.Component {
 				);
 			};
 			dispatchDelete( site.ID, category, successAction, failureAction );
+			recordTrack( 'calypso_woocommerce_product_category_delete', {
+				id: category.id,
+				name: category.name,
+				image: category.image,
+				description: category.description,
+				parent: category.parent,
+			} );
 		} );
 	};
 
 	onSave = () => {
-		const { site, category, translate } = this.props;
+		const { site, category, translate, edits } = this.props;
 		this.setState( () => ( { busy: true } ) );
 
 		const successAction = () => {
@@ -141,6 +157,16 @@ class ProductCategoryUpdate extends React.Component {
 		};
 
 		this.props.updateProductCategory( site.ID, category, successAction, failureAction );
+
+		const edited_fields = difference( Object.keys( edits || {} ), [ 'id' ] ).join();
+		recordTrack( 'calypso_woocommerce_product_category_update', {
+			edited_fields,
+			id: category.id,
+			name: category.name,
+			image: category.image,
+			description: category.description,
+			parent: category.parent,
+		} );
 	};
 
 	render() {
@@ -161,6 +187,7 @@ class ProductCategoryUpdate extends React.Component {
 					siteId={ site && site.ID }
 					category={ category || {} }
 					editProductCategory={ this.props.editProductCategory }
+					onEditStart={ this.onEditStart }
 				/>
 			</Main>
 		);
@@ -172,12 +199,14 @@ function mapStateToProps( state, ownProps ) {
 
 	const site = getSelectedSiteWithFallback( state );
 	const category = getProductCategoryWithLocalEdits( state, categoryId );
-	const hasEdits = ! isEmpty( omit( getProductCategoryEdits( state, categoryId ), 'id' ) );
+	const edits = getProductCategoryEdits( state, categoryId );
+	const hasEdits = ! isEmpty( omit( edits, 'id' ) );
 
 	return {
 		site,
 		category,
 		hasEdits,
+		edits,
 	};
 }
 

@@ -34,6 +34,7 @@ class ProductCategoryForm extends Component {
 			id: PropTypes.isRequired,
 		} ),
 		editProductCategory: PropTypes.func.isRequired,
+		onEditStart: PropTypes.func.isRequired,
 	};
 
 	constructor( props ) {
@@ -51,6 +52,7 @@ class ProductCategoryForm extends Component {
 			transientId: null,
 			isUploading: false,
 			search: '',
+			startedEditing: false,
 			selectedParent,
 			isTopLevel,
 		};
@@ -77,20 +79,30 @@ class ProductCategoryForm extends Component {
 		}
 	}
 
+	trackEdit = field => {
+		if ( ! this.state.startedEditing ) {
+			this.props.onEditStart( field );
+			this.setState( { startedEditing: true } );
+		}
+	};
+
 	setName = e => {
 		const { siteId, category, editProductCategory } = this.props;
 		const name = e.target.value;
 		editProductCategory( siteId, category, { name } );
+		this.trackEdit( 'name' );
 	};
 
 	setDescription = description => {
 		const { siteId, category, editProductCategory } = this.props;
 		editProductCategory( siteId, category, { description } );
+		this.trackEdit( 'name' );
 	};
 
 	setParent = parent => {
 		const { siteId, category, editProductCategory } = this.props;
 		editProductCategory( siteId, category, { parent: parent.ID } );
+		this.trackEdit( 'parent' );
 	};
 
 	onTopLevelChange = () => {
@@ -101,6 +113,7 @@ class ProductCategoryForm extends Component {
 				isTopLevel: ! this.state.isTopLevel,
 			} );
 		}
+		this.trackEdit( 'parent' );
 	};
 
 	onSearch = searchTerm => {
@@ -131,6 +144,7 @@ class ProductCategoryForm extends Component {
 			isUploading: false,
 		} );
 		editProductCategory( siteId, category, { image } );
+		this.trackEdit( 'image' );
 	};
 
 	onError = () => {
@@ -149,6 +163,7 @@ class ProductCategoryForm extends Component {
 			isUploading: false,
 		} );
 		editProductCategory( siteId, category, { image: {} } );
+		this.trackEdit( 'image' );
 	};
 
 	renderImage = () => {
@@ -244,6 +259,8 @@ class ProductCategoryForm extends Component {
 		if ( search && search.length ) {
 			query.search = search;
 		}
+
+		// If new fields are added here, make sure to add them to recordTrack events in create.js and update.js
 
 		return (
 			<div className={ classNames( 'product-categories__form', this.props.className ) }>

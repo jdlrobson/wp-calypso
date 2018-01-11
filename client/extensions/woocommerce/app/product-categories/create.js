@@ -31,6 +31,7 @@ import {
 import { getLink } from 'woocommerce/lib/nav-utils';
 import ProductCategoryForm from './form';
 import ProductCategoryHeader from './header';
+import { recordTrack } from 'woocommerce/lib/analytics';
 import { successNotice, errorNotice } from 'state/notices/actions';
 
 class ProductCategoryCreate extends React.Component {
@@ -48,6 +49,7 @@ class ProductCategoryCreate extends React.Component {
 
 	state = {
 		busy: false,
+		startedEditing: false,
 	};
 
 	componentDidMount() {
@@ -77,6 +79,12 @@ class ProductCategoryCreate extends React.Component {
 		}
 	}
 
+	onEditStart = initial_field => {
+		recordTrack( 'calypso_woocommerce_product_category_new_edit_start', {
+			initial_field,
+		} );
+	};
+
 	onSave = () => {
 		const { site, category, translate } = this.props;
 		this.setState( { busy: true } );
@@ -100,6 +108,13 @@ class ProductCategoryCreate extends React.Component {
 		};
 
 		this.props.createProductCategory( site.ID, category, successAction, failureAction );
+
+		recordTrack( 'calypso_woocommerce_product_category_create', {
+			name: category.name,
+			image: category.image,
+			description: category.description,
+			parent: category.parent,
+		} );
 	};
 
 	render() {
@@ -119,6 +134,7 @@ class ProductCategoryCreate extends React.Component {
 					siteId={ site && site.ID }
 					category={ category || { parent: 0 } }
 					editProductCategory={ this.props.editProductCategory }
+					onEditStart={ this.onEditStart }
 				/>
 			</Main>
 		);
