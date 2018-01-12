@@ -202,6 +202,50 @@ export function sendInvites( siteId, usernamesOrEmails, role, message, formId ) 
 	};
 }
 
+export function resendInvites( siteId, inviteId ) {
+	return dispatch => {
+		Dispatcher.handleViewAction( {
+			type: ActionTypes.RESENDING_INVITES,
+			siteId,
+			inviteId,
+		} );
+		wpcom.undocumented().resendInvites( siteId, inviteId, ( error, data ) => {
+			const validationErrors = get( data, 'errors' );
+			const isErrored = !! error || ! isEmpty( validationErrors );
+
+			Dispatcher.handleServerAction( {
+				type: isErrored
+					? ActionTypes.RECEIVE_RESENDING_INVITES_ERROR
+					: ActionTypes.RECEIVE_RESENDING_INVITES_SUCCESS,
+				error,
+				siteId,
+				inviteId,
+				data,
+			} );
+
+			if ( isErrored ) {
+				dispatch(
+					errorNotice(
+						i18n.translate( 'The invitation failed to resend', {
+							context: 'Displayed in a notice when an invitation failed to resend.',
+						} )
+					)
+				);
+				analytics.tracks.recordEvent( 'calypso_invite_resend_failed' );
+			} else {
+				dispatch(
+					successNotice(
+						i18n.translate( 'Invitation resent successfully', {
+							context: 'Displayed in a notice when an invitation is resent successfully.',
+						} )
+					)
+				);
+				analytics.tracks.recordEvent( 'calypso_invite_resend_success' );
+			}
+		} );
+	};
+}
+
 export function createInviteValidation( siteId, usernamesOrEmails, role ) {
 	Dispatcher.handleViewAction( {
 		type: ActionTypes.CREATE_INVITE_VALIDATION,
