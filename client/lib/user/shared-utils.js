@@ -19,9 +19,8 @@ import { withoutHttp } from 'lib/url';
 const languages = config( 'languages' );
 
 function getLanguage( slug ) {
-	var len = languages.length,
-		language,
-		index;
+	const { length: len } = languages;
+	let language, index;
 
 	for ( index = 0; index < len; index++ ) {
 		if ( slug === languages[ index ].langSlug ) {
@@ -34,37 +33,37 @@ function getLanguage( slug ) {
 }
 
 function getSiteSlug( url ) {
-	var slug = withoutHttp( url );
+	const slug = withoutHttp( url );
 	return slug.replace( /\//g, '::' );
 }
 
 export default {
 	filterUserObject: function( obj ) {
-		var user = {},
-			allowedKeys = [
-				'ID',
-				'display_name',
-				'username',
-				'avatar_URL',
-				'site_count',
-				'visible_site_count',
-				'date',
-				'has_unseen_notes',
-				'newest_note_type',
-				'phone_account',
-				'email',
-				'email_verified',
-				'is_valid_google_apps_country',
-				'user_ip_country_code',
-				'logout_URL',
-				'primary_blog',
-				'primary_blog_is_jetpack',
-				'primary_blog_url',
-				'meta',
-				'is_new_reader',
-				'social_signup_service',
-			],
-			decodeWhitelist = [ 'display_name', 'description', 'user_URL' ];
+		const user = {};
+		const allowedKeys = [
+			'ID',
+			'display_name',
+			'username',
+			'avatar_URL',
+			'site_count',
+			'visible_site_count',
+			'date',
+			'has_unseen_notes',
+			'newest_note_type',
+			'phone_account',
+			'email',
+			'email_verified',
+			'is_valid_google_apps_country',
+			'user_ip_country_code',
+			'logout_URL',
+			'primary_blog',
+			'primary_blog_is_jetpack',
+			'primary_blog_url',
+			'meta',
+			'is_new_reader',
+			'social_signup_service',
+		];
+		const decodeWhitelist = [ 'display_name', 'description', 'user_URL' ];
 
 		allowedKeys.forEach( function( key ) {
 			user[ key ] =
@@ -75,8 +74,8 @@ export default {
 	},
 
 	getComputedAttributes: function( attributes ) {
-		var language = getLanguage( attributes.language ),
-			primayBlogUrl = attributes.primary_blog_url || '';
+		const language = getLanguage( attributes.language );
+		const primayBlogUrl = attributes.primary_blog_url || '';
 		return {
 			primarySiteSlug: getSiteSlug( primayBlogUrl ),
 			localeSlug: attributes.language,
