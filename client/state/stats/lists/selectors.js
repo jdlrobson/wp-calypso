@@ -57,8 +57,19 @@ export function hasSiteStatsQueryFailed( state, siteId, statType, query ) {
  * @return {?Object}           Data for the query
  */
 export function getSiteStatsForQuery( state, siteId, statType, query ) {
+	if ( typeof query === 'string' ) {
+		return get( state.stats.lists.items, [ siteId, statType, query ], null );
+	}
 	const serializedQuery = getSerializedStatsQuery( query );
 	return get( state.stats.lists.items, [ siteId, statType, serializedQuery ], null );
+}
+
+function withSerializedQuery( selector, argNum ) {
+	return ( ...args ) => {
+		const newArgs = [ ...args ];
+		newArgs[ argNum + 1 ] = getSerializedStatsQuery( args[ argNum + 1 ] );
+		return selector( ...newArgs );
+	};
 }
 
 /**
@@ -71,33 +82,36 @@ export function getSiteStatsForQuery( state, siteId, statType, query ) {
  * @param  {?Number} query.gmtOffset    GMT offset of the queried site
  * @return {Object}           			Parsed Data for the query
  */
-export const getSiteStatsPostStreakData = treeSelect(
-	( { streakData }, siteId, query ) => {
-		const gmtOffset = query.gmtOffset || 0;
-		const response = {};
-		// ensure streakData.data exists and it is not an array
-		if ( streakData && streakData.data && ! isArray( streakData.data ) ) {
-			Object.keys( streakData.data ).forEach( timestamp => {
-				const postDay = i18n.moment.unix( timestamp ).locale( 'en' );
-				const datestamp = postDay.utcOffset( gmtOffset ).format( 'YYYY-MM-DD' );
+export const getSiteStatsPostStreakData = withSerializedQuery(
+	treeSelect(
+		( { streakData }, siteId, query ) => {
+			const gmtOffset = query.gmtOffset || 0;
+			const response = {};
+			// ensure streakData.data exists and it is not an array
+			if ( streakData && streakData.data && ! isArray( streakData.data ) ) {
+				Object.keys( streakData.data ).forEach( timestamp => {
+					const postDay = i18n.moment.unix( timestamp ).locale( 'en' );
+					const datestamp = postDay.utcOffset( gmtOffset ).format( 'YYYY-MM-DD' );
 
-				if ( 'undefined' === typeof response[ datestamp ] ) {
-					response[ datestamp ] = 0;
-				}
+					if ( 'undefined' === typeof response[ datestamp ] ) {
+						response[ datestamp ] = 0;
+					}
 
-				response[ datestamp ] += streakData.data[ timestamp ];
-			} );
+					response[ datestamp ] += streakData.data[ timestamp ];
+				} );
+			}
+
+			return response;
+		},
+		( state, siteId, query ) => ( {
+			streakData: getSiteStatsForQuery( state, siteId, 'statsStreak', query ),
+		} ),
+		( state, siteId, query ) => {
+			const serializedQuery = getSerializedStatsQuery( query );
+			return [ siteId, 'statsStreak', serializedQuery ].join();
 		}
-
-		return response;
-	},
-	( state, siteId, query ) => ( {
-		streakData: getSiteStatsForQuery( state, siteId, 'statsStreak', query ),
-	} ),
-	( state, siteId, query ) => {
-		const serializedQuery = getSerializedStatsQuery( query );
-		return [ siteId, 'statsStreak', serializedQuery ].join();
-	}
+	),
+	2
 );
 
 /**
@@ -108,25 +122,28 @@ export const getSiteStatsPostStreakData = treeSelect(
  * @param  {Object}  query    Stats query object
  * @return {?Number}          Max number of posts by day
  */
-export const getSiteStatsMaxPostsByDay = treeSelect(
-	( { postStreakData } ) => {
-		let max = 0;
+export const getSiteStatsMaxPostsByDay = withSerializedQuery(
+	treeSelect(
+		( { postStreakData } ) => {
+			let max = 0;
 
-		forOwn( postStreakData, count => {
-			if ( count > max ) {
-				max = count;
-			}
-		} );
+			forOwn( postStreakData, count => {
+				if ( count > max ) {
+					max = count;
+				}
+			} );
 
-		return max || null;
-	},
-	( state, siteId, query ) => ( {
-		postStreakData: getSiteStatsForQuery( state, siteId, 'statsStreak', query ),
-	} ),
-	( state, siteId, query ) => {
-		const serializedQuery = getSerializedStatsQuery( query );
-		return [ siteId, 'statsStreakMax', serializedQuery ].join();
-	}
+			return max || null;
+		},
+		( state, siteId, query ) => ( {
+			postStreakData: getSiteStatsForQuery( state, siteId, 'statsStreak', query ),
+		} ),
+		( state, siteId, query ) => {
+			const serializedQuery = getSerializedStatsQuery( query );
+			return [ siteId, 'statsStreakMax', serializedQuery ].join();
+		}
+	),
+	2
 );
 
 /**
@@ -137,24 +154,27 @@ export const getSiteStatsMaxPostsByDay = treeSelect(
  * @param  {Object}  query    Stats query object
  * @return {?Number}          Max number of posts by day
  */
-export const getSiteStatsTotalPostsForStreakQuery = treeSelect(
-	( { postStreakData } ) => {
-		return reduce(
-			postStreakData,
-			( posts, sum ) => {
-				return sum + posts;
-			},
-			0
-		);
-	},
-	( state, siteId, query ) => ( {
-		postStreakData: getSiteStatsPostStreakData( state, siteId, query ),
-	} ),
+export const getSiteStatsTotalPostsForStreakQuery = withSerializedQuery(
+	treeSelect(
+		( { postStreakData } ) => {
+			return reduce(
+				postStreakData,
+				( posts, sum ) => {
+					return sum + posts;
+				},
+				0
+			);
+		},
+		( state, siteId, query ) => ( {
+			postStreakData: getSiteStatsPostStreakData( state, siteId, query ),
+		} ),
 
-	( state, siteId, query ) => {
-		const serializedQuery = getSerializedStatsQuery( query );
-		return [ siteId, 'statsStreakMax', serializedQuery ].join();
-	}
+		( state, siteId, query ) => {
+			const serializedQuery = getSerializedStatsQuery( query );
+			return [ siteId, 'statsStreakMax', serializedQuery ].join();
+		}
+	),
+	2
 );
 
 /**
@@ -181,21 +201,26 @@ export function getSiteStatsPostsCountByDay( state, siteId, query, date ) {
  * @param  {Object}  query    Stats query object
  * @return {*}                Normalized Data for the query, typically an array or object
  */
-export const getSiteStatsNormalizedData = treeSelect(
-	( { siteStats, site }, siteId, statType, query ) => {
-		if ( 'function' === typeof normalizers[ statType ] ) {
-			return normalizers[ statType ].call( this, siteStats, query, siteId, site );
+export const getSiteStatsNormalizedData = withSerializedQuery(
+	treeSelect(
+		( { siteStats, site }, siteId, statType, query ) => {
+			if ( 'function' === typeof normalizers[ statType ] ) {
+				return normalizers[ statType ].call( this, siteStats, query, siteId, site );
+			}
+			return siteStats;
+		},
+		( state, siteId, statType, query ) => {
+			return {
+				siteStats: getSiteStatsForQuery( state, siteId, statType, query ),
+				site: getSite( state, siteId ),
+			};
+		},
+		( state, siteId, statType, query ) => {
+			const serializedQuery = getSerializedStatsQuery( query );
+			return [ siteId, statType, serializedQuery ].join();
 		}
-		return siteStats;
-	},
-	( state, siteId, statType, query ) => ( {
-		siteStats: getSiteStatsForQuery( state, siteId, statType, query ),
-		site: getSite( state, siteId ),
-	} ),
-	( state, siteId, statType, query ) => {
-		const serializedQuery = getSerializedStatsQuery( query );
-		return [ siteId, statType, serializedQuery ].join();
-	}
+	),
+	2
 );
 
 /**
