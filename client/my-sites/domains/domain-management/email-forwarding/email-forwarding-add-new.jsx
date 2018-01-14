@@ -96,7 +96,9 @@ const EmailForwardingAddNew = createReactClass( {
 					notices.error(
 						error.message ||
 							this.props.translate(
-								'Failed to add email forwarding record. Please try again or {{contactSupportLink}}contact support{{/contactSupportLink}}.',
+								'Failed to add email forwarding record. ' +
+									'Please try again or ' +
+									'{{contactSupportLink}}contact support{{/contactSupportLink}}.',
 								{
 									components: {
 										contactSupportLink: <a href={ support.CALYPSO_CONTACT } />,
@@ -109,7 +111,9 @@ const EmailForwardingAddNew = createReactClass( {
 
 					notices.success(
 						this.props.translate(
-							'%(email)s has been successfully added! You must confirm your email before it starts working. Please check your inbox for %(destination)s.',
+							'%(email)s has been successfully added! ' +
+								'You must confirm your email before it starts working. ' +
+								'Please check your inbox for %(destination)s.',
 							{
 								args: {
 									email: mailbox + '@' + this.props.selectedDomainName,
