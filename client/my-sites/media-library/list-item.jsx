@@ -61,7 +61,7 @@ export default class extends React.Component {
 	};
 
 	renderItem = () => {
-		var component;
+		let component;
 
 		if ( ! this.props.media ) {
 			return;
@@ -126,9 +126,13 @@ export default class extends React.Component {
 		}
 
 		return (
-			<div className={ classes } style={ style } onClick={ this.clickItem } { ...props }>
+			<div className={ classes } style={ style }
+				role="button"
+				tabIndex={0}
+				onKeyPress={ this.clickItem }
+				onClick={ this.clickItem } { ...props }>
 				<span className="media-library__list-item-selected-icon">
-					<Gridicon icon="checkmark" size={ 20 } />
+					<Gridicon icon="checkmark" size={ 24 } />
 				</span>
 				<figure className="media-library__list-item-figure" title={ title }>
 					{ this.renderItem() }
